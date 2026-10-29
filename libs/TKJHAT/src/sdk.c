@@ -272,6 +272,8 @@ bool i2c_read(uint8_t addr, uint8_t *dst, size_t len, bool nostop) {
     return bytes_read == (int)len;
 }
 
+
+
 /* =========================
  *  MICROPHONE
  * ========================= */
@@ -554,7 +556,16 @@ uint32_t veml6030_read_light() {
     //            käyttäen VEML6030-sovellussuunnitteluasiakirjan sivun 5 tietoja:https://www.vishay.com/docs/84367/designingveml6030.pdf
     //            Lopuksi tallenna arvo muuttujaan luxVal_uncorrected.
   
-    uint32_t luxVal_uncorrected = 0; 
+    uint8_t txBuffer[1];
+    uint8_t rxBuffer[2];
+
+    txBuffer[0] = VEML6030_ALS_REG;
+    i2c_write_blocking(i2c_default, VEML6030_I2C_ADDR, txBuffer, 1, true);
+    i2c_read_blocking(i2c_default, VEML6030_I2C_ADDR, rxBuffer, 2, false);
+    uint16_t adreg = ((uint16_t)rxBuffer[1] << 8) | rxBuffer[0];
+
+
+    uint32_t luxVal_uncorrected = adreg * 0.5376;
     if (luxVal_uncorrected>1000){
         // Polynomial is pulled from pg 10 of the datasheet. 
         // See https://github.com/sparkfun/SparkFun_Ambient_Light_Sensor_Arduino_Library/blob/efde0817bd6857863067bd1653a2cfafe6c68732/src/SparkFun_VEML6030_Ambient_Light_Sensor.cpp#L409
@@ -566,6 +577,7 @@ uint32_t veml6030_read_light() {
     }
     return  luxVal_uncorrected;
 }
+
 
 
 
